@@ -1,0 +1,550 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>迷你星球伙伴・養成小遊戲</title>
+<style>
+  :root{
+    --bg:#fdf6f0;
+    --ink:#2b2230;
+    --accent:#ff5d8f;
+    --accent2:#6c5ce7;
+    --card:#ffffff;
+    --muted:#7a7283;
+    --gold:#ffb454;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    background:linear-gradient(160deg,#fff0f5 0%, #fdf6f0 40%, #eef0ff 100%);
+    color:var(--ink);
+    font-family:"PingFang TC","Noto Sans TC",-apple-system,sans-serif;
+    line-height:1.6;
+    transition:background 0.6s ease;
+  }
+  body.bg-300{background:linear-gradient(160deg,#ffe8cc 0%, #ffd6e8 45%, #e0d4ff 100%);}
+  body.bg-1000{background:linear-gradient(160deg,#1f1b2e 0%, #3b2f5e 45%, #57407a 100%); color:#f1eefc;}
+  .wrap{max-width:520px;margin:0 auto;padding:20px 16px 80px;}
+
+  .topbar{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;}
+  .topbar a{font-size:12px;color:var(--accent2);text-decoration:none;font-weight:700;}
+  .brand{display:flex;align-items:center;gap:8px;}
+  .brand img{width:30px;height:30px;border-radius:50%;object-fit:cover;}
+  .brand span{font-size:13px;font-weight:800;}
+
+  h1{font-size:22px;margin:6px 0 2px;text-align:center;font-weight:800;}
+  .sub{text-align:center;font-size:12.5px;color:var(--muted);margin-bottom:18px;}
+  body.bg-1000 .sub{color:#c9c2e0;}
+
+  .stage{
+    position:relative;
+    background:var(--card);
+    border-radius:24px;
+    padding:26px 16px 18px;
+    box-shadow:0 8px 24px rgba(0,0,0,0.06);
+    text-align:center;
+    margin-bottom:16px;
+    overflow:hidden;
+  }
+  .planet{
+    position:relative;
+    width:180px;height:180px;
+    margin:0 auto 10px;
+    border-radius:50%;
+    background:radial-gradient(circle at 35% 30%, #ffe3ef, #ffd0e6 55%, #ffb8d9 100%);
+    display:flex;align-items:center;justify-content:center;
+    box-shadow:inset 0 -10px 20px rgba(0,0,0,0.06);
+  }
+  .stage.outfit-on .planet{box-shadow:inset 0 -10px 20px rgba(0,0,0,0.06), 0 0 0 6px rgba(255,180,84,0.35);}
+  .char-wrap{position:relative;width:96px;height:96px;}
+  .char-wrap img{width:100%;height:100%;object-fit:cover;border-radius:50%;border:3px solid #fff;box-shadow:0 4px 10px rgba(0,0,0,0.12);}
+  .pet-wrap{position:absolute;bottom:-6px;right:-14px;width:46px;height:46px;}
+  .pet-wrap img{width:100%;height:100%;object-fit:cover;border-radius:50%;border:2px solid #fff;box-shadow:0 3px 8px rgba(0,0,0,0.15);}
+  .orbit{position:absolute;inset:0;pointer-events:none;}
+  .orbit span{position:absolute;font-size:16px;animation:spin 14s linear infinite;}
+  @keyframes spin{from{transform:rotate(0deg) translateX(88px) rotate(0deg);}to{transform:rotate(360deg) translateX(88px) rotate(-360deg);}}
+
+  .stats{display:grid;gap:10px;margin-top:14px;text-align:left;}
+  .stat-row{display:flex;align-items:center;gap:8px;}
+  .stat-row .label{width:52px;font-size:12px;font-weight:700;color:var(--muted);flex-shrink:0;}
+  body.bg-1000 .stat-row .label{color:#c9c2e0;}
+  .bar{flex:1;height:10px;border-radius:6px;background:#f0eef7;overflow:hidden;}
+  .bar-fill{height:100%;border-radius:6px;transition:width .4s ease;}
+  .bar-fill.mood{background:linear-gradient(90deg,var(--accent),#ff8fb3);}
+  .bar-fill.clean{background:linear-gradient(90deg,#4fc3f7,#81e6d9);}
+  .stat-num{width:34px;text-align:right;font-size:11px;color:var(--muted);}
+
+  .pop-box{margin-top:14px;background:#f8f6ff;border-radius:12px;padding:10px 12px;font-size:12px;color:var(--muted);}
+  body.bg-1000 .pop-box{background:rgba(255,255,255,0.08);color:#c9c2e0;}
+  .pop-box b{color:var(--accent2);}
+  .pop-bar{height:8px;border-radius:6px;background:#eee;margin-top:6px;overflow:hidden;}
+  .pop-fill{height:100%;background:linear-gradient(90deg,var(--gold),var(--accent2));border-radius:6px;transition:width .4s ease;}
+
+  .currency{display:flex;justify-content:center;gap:18px;margin:14px 0 4px;font-size:13px;font-weight:700;}
+  .currency span{background:#fff6e5;color:#7a5d23;padding:5px 12px;border-radius:20px;}
+  body.bg-1000 .currency span{background:rgba(255,255,255,0.1);color:#ffd9a0;}
+
+  .actions{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:16px;}
+  .actions button{
+    border:none;border-radius:12px;padding:12px 4px;
+    background:var(--accent2);color:#fff;font-weight:700;font-size:13px;cursor:pointer;
+  }
+  .actions button:disabled{background:#d9d5e8;color:#9a93ac;cursor:not-allowed;}
+
+  .gacha-btn{
+    width:100%;border:none;border-radius:14px;padding:14px 0;
+    background:linear-gradient(135deg,var(--accent),var(--accent2));
+    color:#fff;font-weight:800;font-size:14px;cursor:pointer;margin-bottom:8px;
+  }
+  .gacha-btn:disabled{opacity:.5;cursor:not-allowed;}
+
+  h2{
+    font-size:13px;letter-spacing:.06em;color:var(--accent2);font-weight:800;
+    margin:28px 0 12px;display:flex;align-items:center;gap:6px;
+  }
+  body.bg-1000 h2{color:#c9b8ff;}
+  h2::before{content:"";width:6px;height:6px;border-radius:50%;background:var(--accent);}
+
+  .dex{display:grid;grid-template-columns:repeat(5,1fr);gap:8px;}
+  .dex .slot{
+    aspect-ratio:1/1;border-radius:12px;background:#f3f1fb;
+    display:flex;align-items:center;justify-content:center;font-size:22px;
+    box-shadow:0 2px 6px rgba(0,0,0,0.04);
+  }
+  body.bg-1000 .dex .slot{background:rgba(255,255,255,0.08);}
+  .dex .slot.empty{opacity:.25;}
+  .dex-count{font-size:12px;color:var(--muted);margin:-4px 0 12px;}
+
+  .poster-card{
+    background:var(--card);border-radius:16px;padding:16px;margin-top:6px;
+    box-shadow:0 4px 14px rgba(0,0,0,0.05);
+  }
+  .locked{text-align:center;font-size:13px;color:var(--muted);padding:20px 10px;background:#f8f6ff;border-radius:14px;}
+  body.bg-1000 .locked{background:rgba(255,255,255,0.06);color:#c9c2e0;}
+  .p-tabs{display:flex;gap:8px;margin-bottom:12px;}
+  .p-tab{flex:1;border:none;padding:8px 0;border-radius:10px;background:#eee;color:var(--muted);font-weight:700;font-size:13px;cursor:pointer;}
+  .p-tab.active{background:var(--accent2);color:#fff;}
+  .p-panel{display:none;}
+  .p-panel.active{display:block;}
+  .prompt-box{
+    background:#1f1b2e;color:#f1eefc;border-radius:12px;padding:14px;
+    font-family:"SF Mono",Consolas,monospace;font-size:11.5px;white-space:pre-wrap;
+    max-height:200px;overflow-y:auto;margin-bottom:10px;
+  }
+  .copy-btn{width:100%;background:var(--accent);color:#fff;border:none;padding:11px 0;border-radius:10px;font-weight:700;font-size:13px;cursor:pointer;}
+  .copy-btn.copied{background:#3bb273;}
+
+  .toast{
+    position:fixed;left:50%;bottom:24px;transform:translateX(-50%) translateY(20px);
+    background:#1f1b2e;color:#fff;padding:12px 20px;border-radius:30px;font-size:13px;font-weight:700;
+    box-shadow:0 6px 18px rgba(0,0,0,0.25);opacity:0;pointer-events:none;transition:all .35s ease;z-index:50;
+  }
+  .toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
+
+  .modal-bg{
+    position:fixed;inset:0;background:rgba(20,15,30,0.55);display:none;
+    align-items:center;justify-content:center;z-index:60;padding:20px;
+  }
+  .modal-bg.show{display:flex;}
+  .modal{background:#fff;border-radius:20px;padding:28px 22px;text-align:center;max-width:280px;width:100%;}
+  .modal .big-emoji{font-size:56px;margin-bottom:8px;}
+  .modal .name{font-weight:800;font-size:16px;margin-bottom:2px;}
+  .modal .rarity{font-size:12px;color:var(--accent2);font-weight:700;margin-bottom:16px;}
+  .modal button{width:100%;border:none;background:var(--accent2);color:#fff;padding:11px 0;border-radius:10px;font-weight:700;font-size:13px;cursor:pointer;}
+
+  .select-screen{text-align:center;padding-top:20px;}
+  .select-grid{display:flex;gap:14px;justify-content:center;margin:22px 0;}
+  .select-card{
+    background:var(--card);border-radius:18px;padding:14px;cursor:pointer;
+    border:3px solid transparent;box-shadow:0 4px 14px rgba(0,0,0,0.05);width:130px;
+  }
+  .select-card img{width:100%;aspect-ratio:1/1;object-fit:cover;border-radius:14px;margin-bottom:8px;}
+  .select-card .name{font-weight:700;font-size:13px;}
+  .select-card:active{border-color:var(--accent);}
+
+  .reset-link{display:block;text-align:center;margin-top:36px;font-size:11px;color:var(--muted);text-decoration:underline;}
+  .hidden{display:none !important;}
+</style>
+</head>
+<body id="body">
+<div class="wrap">
+
+  <div class="topbar">
+    <div class="brand"><img src="avatar.png" alt="管理員"><span>星球管理員</span></div>
+    <a href="index.html">AI 海報教學 →</a>
+  </div>
+
+  <!-- 選角畫面 -->
+  <div id="select-screen" class="select-screen hidden">
+    <h1>選擇你的星球分身</h1>
+    <p class="sub">選好之後就會開始養成，形象會保留在這台裝置上</p>
+    <div class="select-grid">
+      <div class="select-card" onclick="startGame('female')">
+        <img src="female.png" alt="女版">
+        <div class="name">女版</div>
+      </div>
+      <div class="select-card" onclick="startGame('male')">
+        <img src="male.png" alt="男版">
+        <div class="name">男版</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 遊戲主畫面 -->
+  <div id="game-screen" class="hidden">
+    <h1>迷你星球伙伴</h1>
+    <p class="sub">每天陪陪你的分身和寵物，養出全宇宙最有人氣的小行星</p>
+
+    <div class="stage" id="stage">
+      <div class="planet">
+        <div class="orbit" id="orbit"></div>
+        <div class="char-wrap">
+          <img id="char-img" src="female.png" alt="分身">
+          <div class="pet-wrap"><img src="pet.png" alt="寵物"></div>
+        </div>
+      </div>
+
+      <div class="stats">
+        <div class="stat-row">
+          <span class="label">心情</span>
+          <div class="bar"><div class="bar-fill mood" id="bar-mood"></div></div>
+          <span class="stat-num" id="num-mood"></span>
+        </div>
+        <div class="stat-row">
+          <span class="label">清潔</span>
+          <div class="bar"><div class="bar-fill clean" id="bar-clean"></div></div>
+          <span class="stat-num" id="num-clean"></span>
+        </div>
+      </div>
+
+      <div class="pop-box">
+        人氣值 <b id="pop-num">0</b> ・ 下一個里程碑：<span id="pop-next">100（換裝解鎖）</span>
+        <div class="pop-bar"><div class="pop-fill" id="pop-fill"></div></div>
+      </div>
+    </div>
+
+    <div class="currency"><span>✨ 星塵 <b id="stardust-num">0</b></span></div>
+
+    <div class="actions">
+      <button id="btn-feed" onclick="doAction('feed')">🍙 餵食</button>
+      <button id="btn-clean" onclick="doAction('clean')">🧹 打掃</button>
+      <button id="btn-play" onclick="doAction('play')">🎾 陪玩</button>
+    </div>
+
+    <button class="gacha-btn" id="btn-gacha" onclick="doGacha()">🎁 抽一次伙伴（50 星塵）</button>
+
+    <h2>星球圖鑑</h2>
+    <div class="dex-count" id="dex-count">0 / 10 已收集</div>
+    <div class="dex" id="dex-grid"></div>
+
+    <h2>AI 海報功能</h2>
+    <div id="poster-locked" class="locked">人氣值達到 600 即可解鎖・把你的小行星生成成一張 AI 海報</div>
+    <div id="poster-card" class="poster-card hidden">
+      <div class="p-tabs">
+        <button class="p-tab active" onclick="switchPTab(0)">主角版</button>
+        <button class="p-tab" onclick="switchPTab(1)">寵物版</button>
+      </div>
+      <div class="p-panel active" id="p-panel-0">
+        <div class="prompt-box" id="prompt-main"></div>
+        <button class="copy-btn" onclick="copyPrompt('prompt-main', this)">複製 Prompt</button>
+      </div>
+      <div class="p-panel" id="p-panel-1">
+        <div class="prompt-box" id="prompt-pet"></div>
+        <button class="copy-btn" onclick="copyPrompt('prompt-pet', this)">複製 Prompt</button>
+      </div>
+    </div>
+
+    <a class="reset-link" onclick="resetGame()">重置我的星球進度</a>
+  </div>
+
+</div>
+
+<div class="toast" id="toast"></div>
+
+<div class="modal-bg" id="modal-bg">
+  <div class="modal">
+    <div class="big-emoji" id="modal-emoji">🐱</div>
+    <div class="name" id="modal-name">小奶貓</div>
+    <div class="rarity" id="modal-rarity">普通</div>
+    <button onclick="closeModal()">太可愛了！</button>
+  </div>
+</div>
+
+<script>
+const STORAGE_KEY = 'tinyPlanetPals_v1';
+
+const COMPANIONS = [
+  {id:'kitty', emoji:'🐱', name:'小奶貓', rarity:'普通'},
+  {id:'bunny', emoji:'🐰', name:'兔兔', rarity:'普通'},
+  {id:'bear', emoji:'🐻', name:'小熊熊', rarity:'普通'},
+  {id:'panda', emoji:'🐼', name:'胖達達', rarity:'普通'},
+  {id:'fox', emoji:'🦊', name:'狐狐', rarity:'普通'},
+  {id:'koala', emoji:'🐨', name:'考拉拉', rarity:'稀有'},
+  {id:'penguin', emoji:'🐧', name:'企鵝仔', rarity:'稀有'},
+  {id:'hamster', emoji:'🐹', name:'倉鼠球', rarity:'稀有'},
+  {id:'unicorn', emoji:'🦄', name:'獨角獸', rarity:'超稀有'},
+  {id:'dragon', emoji:'🐲', name:'小龍仔', rarity:'超稀有'},
+];
+const RARITY_WEIGHT = {'普通':60, '稀有':30, '超稀有':10};
+
+const THRESHOLDS = [
+  {pop:100, label:'換裝解鎖'},
+  {pop:300, label:'新場景解鎖'},
+  {pop:600, label:'AI 海報功能解鎖'},
+  {pop:1000, label:'限定伙伴＋新場景'},
+];
+
+const PROMPTS = {
+  female: `Create a hyper-realistic tiny planet fisheye scene featuring the person from the uploaded photo standing happily at the center of a miniature 3D world.
+Preserve her exact facial likeness, hairstyle, smile, skin tone, and expression with very high identity accuracy. Keep the face completely recognizable and natural with no distortion.
+She wears the same elegant Japanese kimono from the reference photo and stands confidently at the top of a tiny curved planet with a dramatic little-planet fisheye perspective.
+Surround the miniature world with a magical Sanrio-inspired universe filled with adorable kawaii mascots and cute friends. Include characters inspired by Hello Kitty, My Melody, Kuromi, Cinnamoroll, Pompompurin, Pochacco, Keroppi, Badtz-Maru, Little Twin Stars, Hangyodon, Usahana and many tiny pastel animal companions.
+Make several characters much larger than others, positioned around the planet like guardians of a cute fantasy world. Everyone is smiling, playing and interacting happily.
+Cover the world with colorful flowers, miniature houses, ferris wheels, toy trains, pink neon signs, amusement parks, tiny cities, glowing lanterns, airships, hot air balloons, floating islands and magical clouds.
+Camera angle: extreme fisheye lens, giant tiny-planet effect, slightly top-down view, centered composition.
+Lighting: cinematic golden hour sunset, volumetric clouds, warm sunlight, HDR, soft glow, depth of field.
+Style: ultra-detailed Pixar-quality 3D animation blended with DSLR photography realism, Unreal Engine 5, Octane Render, ray tracing, global illumination.`,
+  male: `Create a hyper-realistic tiny planet fisheye scene featuring the person from the uploaded photo standing happily at the center of a miniature 3D world. Preserve his exact facial likeness, hairstyle, smile, skin tone, and expression with high identity accuracy — keep the face completely recognizable and natural, with no distortion. He wears the same shirt, matching white sweatpants, and clean white sneakers. He stands confidently on top of a tiny curved planet with a dramatic little-planet fisheye perspective. Surround the miniature world with dozens of cheerful, colorful original cartoon companions inspired by nostalgic Disneys Cartoon animation aesthetics. Add floating islands, toy houses, amusement parks, airships, hot-air balloons, water towers, neon signs, colorful flowers, and miniature cities wrapping around the spherical planet. Camera angle: extreme fisheye lens, tiny-planet effect, centered composition, slightly looking down from above. Ultra detailed, hyper-realistic, cinematic, global illumination, ray tracing, vibrant colors, 8K masterpiece.`,
+  pet: `Create a hyper-realistic tiny planet fisheye scene featuring the dog from the uploaded photo standing proudly and happily at the center of a miniature 3D world.
+Preserve the dog's exact facial features, fur colors, ears, eyes, nose, tongue, expression, and overall appearance with very high identity accuracy. Keep the face completely recognizable and natural with no distortion.
+The dog is much larger than all surrounding dogs and stands confidently at the top of a tiny curved planet with a dramatic little-planet fisheye perspective.
+Surround the miniature world with 40-60 adorable dogs of many different breeds, all smiling, playful, and interacting happily with one another, creating a joyful dog paradise.
+Cover the planet with colorful flowers, green grass, tiny trees, toy houses, amusement parks, ferris wheels, miniature cities, toy trains, hot-air balloons, floating islands, airships, water towers, and glowing neon signs.
+Camera angle: extreme fisheye lens, tiny-planet effect, viewed slightly from above, centered composition.
+Lighting: warm cinematic golden-hour sunset with volumetric clouds, soft sunlight, HDR, depth of field, dramatic rim lighting.
+Style: Pixar-quality 3D animation blended with DSLR photography realism, Unreal Engine 5, Octane Render, global illumination, ray tracing.`,
+};
+
+let state = null;
+
+function todayStr(){ return new Date().toISOString().slice(0,10); }
+function daysBetween(a,b){
+  const d1 = new Date(a), d2 = new Date(b);
+  return Math.max(0, Math.round((d2-d1)/86400000));
+}
+
+function loadState(){
+  const raw = localStorage.getItem(STORAGE_KEY);
+  return raw ? JSON.parse(raw) : null;
+}
+function saveState(){ localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); }
+
+function init(){
+  state = loadState();
+  if(!state){
+    document.getElementById('select-screen').classList.remove('hidden');
+    return;
+  }
+  applyDailyDecay();
+  document.getElementById('game-screen').classList.remove('hidden');
+  render();
+}
+
+function startGame(route){
+  state = {
+    route: route,
+    mood: 100,
+    clean: 100,
+    popularity: 0,
+    stardust: 30,
+    lastVisit: todayStr(),
+    dailyDone: { feed:'', clean:'', play:'' },
+    dex: [],
+    highestUnlockShown: 0,
+  };
+  saveState();
+  document.getElementById('select-screen').classList.add('hidden');
+  document.getElementById('game-screen').classList.remove('hidden');
+  render();
+}
+
+function applyDailyDecay(){
+  const today = todayStr();
+  const days = daysBetween(state.lastVisit, today);
+  if(days > 0){
+    state.mood = Math.max(0, state.mood - 10*days);
+    state.clean = Math.max(0, state.clean - 10*days);
+    state.lastVisit = today;
+    saveState();
+  }
+}
+
+function nextThreshold(pop){
+  for(const t of THRESHOLDS){ if(pop < t.pop) return t; }
+  return null;
+}
+
+function render(){
+  const body = document.getElementById('body');
+  body.classList.toggle('bg-300', state.popularity >= 300 && state.popularity < 1000);
+  body.classList.toggle('bg-1000', state.popularity >= 1000);
+
+  document.getElementById('char-img').src = state.route === 'male' ? 'male.png' : 'female.png';
+  document.getElementById('stage').classList.toggle('outfit-on', state.popularity >= 100);
+
+  document.getElementById('bar-mood').style.width = state.mood + '%';
+  document.getElementById('num-mood').textContent = state.mood;
+  document.getElementById('bar-clean').style.width = state.clean + '%';
+  document.getElementById('num-clean').textContent = state.clean;
+
+  document.getElementById('pop-num').textContent = state.popularity;
+  const nt = nextThreshold(state.popularity);
+  if(nt){
+    document.getElementById('pop-next').textContent = nt.pop + '（' + nt.label + '）';
+    const prevPop = [0,...THRESHOLDS.map(t=>t.pop)].filter(p=>p<=state.popularity).pop() || 0;
+    const pct = Math.min(100, Math.round((state.popularity - prevPop) / (nt.pop - prevPop) * 100));
+    document.getElementById('pop-fill').style.width = pct + '%';
+  } else {
+    document.getElementById('pop-next').textContent = '已達成全部里程碑！';
+    document.getElementById('pop-fill').style.width = '100%';
+  }
+
+  document.getElementById('stardust-num').textContent = state.stardust;
+
+  const today = todayStr();
+  ['feed','clean','play'].forEach(k=>{
+    const btn = document.getElementById('btn-' + k);
+    const done = state.dailyDone[k] === today;
+    btn.disabled = done;
+    if(done) btn.textContent = '今天已完成';
+  });
+  if(state.dailyDone.feed !== today) document.getElementById('btn-feed').textContent = '🍙 餵食';
+  if(state.dailyDone.clean !== today) document.getElementById('btn-clean').textContent = '🧹 打掃';
+  if(state.dailyDone.play !== today) document.getElementById('btn-play').textContent = '🎾 陪玩';
+
+  document.getElementById('btn-gacha').disabled = state.stardust < 50;
+
+  renderDex();
+  renderOrbit();
+  renderPoster();
+}
+
+function renderDex(){
+  const grid = document.getElementById('dex-grid');
+  grid.innerHTML = '';
+  COMPANIONS.forEach(c=>{
+    const got = state.dex.includes(c.id);
+    const el = document.createElement('div');
+    el.className = 'slot' + (got ? '' : ' empty');
+    el.textContent = got ? c.emoji : '?';
+    grid.appendChild(el);
+  });
+  document.getElementById('dex-count').textContent = state.dex.length + ' / ' + COMPANIONS.length + ' 已收集';
+}
+
+function renderOrbit(){
+  const orbit = document.getElementById('orbit');
+  orbit.innerHTML = '';
+  const shown = state.dex.slice(-4);
+  shown.forEach((id, i)=>{
+    const c = COMPANIONS.find(x=>x.id===id);
+    if(!c) return;
+    const span = document.createElement('span');
+    span.textContent = c.emoji;
+    span.style.left = '50%';
+    span.style.top = '50%';
+    span.style.animationDelay = (i * -3) + 's';
+    orbit.appendChild(span);
+  });
+}
+
+function renderPoster(){
+  const unlocked = state.popularity >= 600;
+  document.getElementById('poster-locked').classList.toggle('hidden', unlocked);
+  document.getElementById('poster-card').classList.toggle('hidden', !unlocked);
+  if(unlocked){
+    document.getElementById('prompt-main').textContent = state.route === 'male' ? PROMPTS.male : PROMPTS.female;
+    document.getElementById('prompt-pet').textContent = PROMPTS.pet;
+  }
+}
+
+function doAction(kind){
+  const today = todayStr();
+  if(state.dailyDone[kind] === today) return;
+  state.dailyDone[kind] = today;
+  state.stardust += 5;
+  state.popularity += 20;
+  if(kind === 'feed') state.mood = Math.min(100, state.mood + 20);
+  if(kind === 'clean') state.clean = Math.min(100, state.clean + 20);
+  if(kind === 'play') state.mood = Math.min(100, state.mood + 10);
+  checkUnlocks();
+  saveState();
+  render();
+}
+
+function checkUnlocks(){
+  for(const t of THRESHOLDS){
+    if(state.popularity >= t.pop && state.highestUnlockShown < t.pop){
+      state.highestUnlockShown = t.pop;
+      showToast('🎉 解鎖：' + t.label);
+      break;
+    }
+  }
+}
+
+function pickCompanion(){
+  const pool = [];
+  COMPANIONS.forEach(c=>{
+    const w = RARITY_WEIGHT[c.rarity];
+    for(let i=0;i<w;i++) pool.push(c);
+  });
+  return pool[Math.floor(Math.random()*pool.length)];
+}
+
+function doGacha(){
+  if(state.stardust < 50) return;
+  state.stardust -= 50;
+  const c = pickCompanion();
+  const isNew = !state.dex.includes(c.id);
+  if(isNew){
+    state.dex.push(c.id);
+  } else {
+    state.stardust += 10;
+  }
+  saveState();
+  render();
+  openModal(c, isNew);
+}
+
+function openModal(c, isNew){
+  document.getElementById('modal-emoji').textContent = c.emoji;
+  document.getElementById('modal-name').textContent = c.name + (isNew ? '' : '（重複，已補償 10 星塵）');
+  document.getElementById('modal-rarity').textContent = c.rarity;
+  document.getElementById('modal-bg').classList.add('show');
+}
+function closeModal(){ document.getElementById('modal-bg').classList.remove('show'); }
+
+function showToast(msg){
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'), 2500);
+}
+
+function switchPTab(i){
+  document.querySelectorAll('.p-tab').forEach((b,idx)=>b.classList.toggle('active', idx===i));
+  document.querySelectorAll('.p-panel').forEach((p,idx)=>p.classList.toggle('active', idx===i));
+}
+
+function copyPrompt(id, btn){
+  const text = document.getElementById(id).innerText;
+  navigator.clipboard.writeText(text).then(()=>{
+    const original = btn.innerText;
+    btn.innerText = '已複製 ✓';
+    btn.classList.add('copied');
+    setTimeout(()=>{ btn.innerText = original; btn.classList.remove('copied'); }, 1800);
+  });
+}
+
+function resetGame(){
+  if(confirm('確定要重置你的星球進度嗎？此動作無法復原。')){
+    localStorage.removeItem(STORAGE_KEY);
+    location.reload();
+  }
+}
+
+init();
+</script>
+</body>
+</html>
